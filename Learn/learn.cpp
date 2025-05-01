@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
 using namespace std;
 void print(const char* str) {
     cout << str << endl;
@@ -173,6 +174,9 @@ public:
     void func() {
         print("基类函数");
     }
+    void func(int a) {
+		print("基类函数重载");
+    }
 	~Base() {
 		print("基类析构函数");
 	}
@@ -187,6 +191,7 @@ public:
 	}
 };
 class Derived1 : public Base {//继承语法 : 访问修饰符 基类1，基类2...
+    //c++支持多继承，但可能存在同一个父类被初始化多次的问题，可以参阅下一章
     /*访问修饰符作用：修饰基类的成员，比如：
     private：使子类外部不能访问基类成员，子类的子类也不行
     protected：子类外部不能访问基类成员，子类的子类却可以
@@ -195,15 +200,77 @@ class Derived1 : public Base {//继承语法 : 访问修饰符 基类1，基类2
 private:
 	DerivedData derivedData; //派生类数据成员
 public:
+    //using Base::func;//可以通过这个方法来引入父类所有func的重载
     Derived1():derivedData() {
 		print("派生类构造函数");
     }
     ~Derived1() {
 		print("派生类析构函数");
     }
+    void func() {
+		print("派生类函数");
+    }
 };
+//void func(Base obj){}//会导致切片问题
+void func(Base& obj){}//加上引用就可以避免
 #pragma endregion
 
+#pragma region 第13章 多态
+class Shape {//包含纯虚函数(至少有一个)的类称为抽象类，不能被实例化，可以有其他成员函数
+public:
+    virtual double Area() = 0;//纯虚函数,用=0来声明,纯虚函数强制需要子类实现
+    virtual ~Shape() {
+        print("Shape 析构");
+    }//虚析构函数，作用是让析构函数有多态，也就是能正确地调用子类的析构函数
+};
+class Circle : public Shape{
+private:
+    double r;
+public:
+    Circle(double r) :r(r){}
+    double Area()
+    {
+        return 3.1416 * r * r;
+    }
+    ~Circle()
+    {
+        print("Circle 析构");
+    }
+};
+class Triango : public Shape{
+private:
+    double a, b, c, p;
+public:
+    Triango(double a, double b, double c):a(a),b(b),c(c)
+    {
+        p = (a + b + c) / 2;
+    }
+    double Area() override//override关键字用于显式覆盖，编译器会查找父类有没有相应需要重写的方法，没有会报错
+    {
+        return sqrt(p * (p - a) * (p - b) * (p - c));
+    }
+    ~Triango() {
+        print("Triango 析构");
+    }
+};
+void deleteShape(Shape* shape) {//演示虚析构函数的多态
+    delete shape;
+}
+class P{
+public:
+    int a;
+    P():a(0)
+    {
+        print("P构造函数");
+    }
+};
+class F11:public P{};
+class F12:public P{};
+class F21 : public F11, public F12 {};//演示虚继承 
+class F13 :public virtual P {};//虚继承语法
+class F14 :public virtual P {};
+class F22:public F13,public F14{};//演示虚继承 
+#pragma endregion
 
 int main()
 {
@@ -265,10 +332,10 @@ int main()
 
 #pragma region 第12章 继承 主程序部分
     print("============第12章 继承============");
-    if (true) {//块级作用域，演示顺序
+    {//块级作用域，演示顺序
         Derived1 derived1;
-    }//离开块级作用域，析构
-    /*output:
+    }/*离开块级作用域，析构
+    output:
         基类数据成员构造函数
         基类构造函数
         派生类数据成员构造函数
@@ -277,6 +344,39 @@ int main()
         派生类数据成员析构函数
         基类析构函数
         基类数据成员析构函数*/
+    print("=====");
+    {
+        Derived1 derived2;
+        //derived2.func(1);//报错，因为子类覆盖了父类的func重载版本
+        derived2.Base::func(1);//这行不报错，因为显式指定了要调用的版本
+        func(derived2);//演示切片问题
+    }
+#pragma endregion
+
+#pragma region 多态 主程序部分
+    print("============第13章 多态============");
+    {
+        Circle circle(2);
+        Triango triango(3, 4, 5);
+        Shape& shape1 = circle;//这其实是里氏替换原则，父类引用指向子类对象
+        Shape& shape2 = triango;//但是注意需要用引用或指针，以防切片问题，详见上一章
+        cout << "Circle Area:" << shape1.Area() << endl
+            << "Triango Area:" << shape2.Area() << endl;//这里就是多态了，父类引用表现出了两种不同的子类行为
+    }
+    print("=====");
+    Circle* pcircle = new Circle(1);
+    deleteShape(pcircle);
+    print("=====");
+    /*析构output:
+     Circle 析构
+     Shape 析构
+     如果不写虚析构函数，将不会显示Circle 析构
+     */
+    F21 f21;//将会看到P构造函数两次
+    //f21.a = 1;//取消注释将会看到F2::a不明确
+    print("=====");
+    F22 f22;//使用虚继承后正常
+    f22.a = 1;
 #pragma endregion
 
     return 0;
