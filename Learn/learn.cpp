@@ -2,159 +2,109 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
+#include <string>
+#include <sstream>
+#include <compare>
 using namespace std;
 void print(const char* str) {
     cout << str << endl;
 }
-#pragma region 第11章 封装相关
+#pragma region 第9章 封装相关
 class MyList
 {
 private:
-    int* arr = nullptr;   // 使用裸指针管理动态数组
-    unsigned int len = 0; // unsigned保证非负
+    int* arr = nullptr;
+    unsigned int size = 0;
 
 public:
-    /* 核心构造函数
-     * explicit: 禁止隐式类型转换（防止意外的MyList list = 5; 这样的构造）
-     * 参数默认值: size=0 支持默认构造（0元素数组）
-     * 初始化列表: 优于在构造函数体内赋值（更高效）
-     */
-    explicit MyList(unsigned int size = 0)
-        : len(size),
-        arr(size ? new int[size] : nullptr) // 处理size=0的情况，避免new int[0]可能的问题
-    {
-    }
+    explicit MyList(unsigned int size = 0)//explicit: 禁止隐式类型转换（防止MyList list = 5;）
+        : size(size),//初始化列表: 优于在构造函数体内赋值
+        arr(size ? new int[size] : nullptr)
+    {}
 
-    /* 析构函数
-     * 必须存在以确保正确释放内存
-     * 虚函数：若类会被继承，应该声明为virtual（本例不需要）
-     */
-    ~MyList()
+    ~MyList()//析构函数确保正确释放内存
     {
-        delete[] arr; // 正确释放数组（如果用new[]分配必须用delete[]）
+        delete[] arr;
     }
-
-    /* 拷贝构造函数（深拷贝）
-     * 当发生以下情况时被调用：
-     * 1. MyList list2 = list1;
-     * 2. 函数传参时的值传递
-     * 3. 函数返回对象时的某些情况
-     */
-    MyList(const MyList& another)
-        : len(another.len),
-        arr(another.len ? new int[another.len] : nullptr)
+    MyList(const MyList& another)//拷贝构造函数（深拷贝）
+        : size(another.size),
+        arr(another.size ? new int[another.size] : nullptr)
     {
+        /*当发生以下情况时被调用：
+        1. MyList list2 = list1;
+        2. 函数传参时的值传递*/
         print("拷贝构造函数");
-        copy(another.arr, another.arr + another.len, arr);
+        copy(another.arr, another.arr + another.size, arr);
     }
-
-    /* 移动构造函数（C++11引入）
-     * 参数必须是右值引用（MyList&&）
-     * noexcept 声明对于标准库容器优化很重要（例如vector的扩容操作）
-     * 注意事项：
-     * 1. 会"窃取"原对象的资源
-     * 2. 必须使原对象处于有效但空的状态
-     */
-    MyList(MyList&& another) noexcept
-        : len(another.len), // 直接获取长度
+    MyList(MyList&& another) noexcept//移动构造函数，MyList&&右值引用，noexcept优化
+        : size(another.size), // 直接获取长度
         arr(another.arr)  // 直接接管指针
     {
         print("移动构造函数");
         // 使原对象处于安全可析构状态
         another.arr = nullptr; // 重要！避免双重释放
-        another.len = 0;
+        another.size = 0;
     }
-
-    /* 拷贝赋值运算符（使用copy-and-swap惯用法）
-     * 处理自我赋值安全
-     * 参数为const引用
-     */
-    MyList& operator=(const MyList& rhs)
+    MyList& operator=(const MyList& rhs)//拷贝赋值运算符（使用copy-and-swap惯用法）
     {
         if (this != &rhs)
         {                      /* 防止自我赋值，因为这样会导致释放arr，之后就访问不了了,
                                 假设上面的if删掉，想想会发生什么*/
-            MyList temp(rhs);  // 1. 创建副本（利用拷贝构造函数）
-            swap(*this, temp); // 2. 交换资源（见下方swap友元函数）
-        } // 3. temp离开作用域，自动释放原有资源
-        return *this; // 返回*this以支持链式赋值（a = b = c）
+            MyList temp(rhs);  // 利用拷贝构造函数
+            swap(*this, temp); //交换资源（见下方swap友元函数）
+        } //temp离开作用域，自动释放原有资源
+        return *this; //返回*this以支持链式赋值（a = b = c）
     }
-
-    /* 移动赋值运算符（C++11）
-     * 参数为右值引用
-     * noexcept声明用于优化
-     */
-    MyList& operator=(MyList&& rhs) noexcept
+    MyList& operator=(MyList&& rhs) noexcept//移动赋值运算符
     {
         if (this != &rhs)
         {                  // 防止自我移动赋值
             delete[] arr;  // 1. 释放当前资源
             arr = rhs.arr; // 2. 接管资源
-            len = rhs.len;
+            size = rhs.size;
 
             rhs.arr = nullptr; // 3. 置空源对象
-            rhs.len = 0;
+            rhs.size = 0;
         }
         return *this;
     }
-
-    /* 下标运算符（非const版本）
-     * 允许修改元素：list[0] = 5;
-     * 边界检查：防止越界访问
-     */
-    int& operator[](unsigned int index)
+    int& operator[](unsigned int index)//下标运算符（非const版本）
     {
-        if (index >= len)
+        if (index >= size)
         {
             throw out_of_range("Index out of range");
         }
         return arr[index];
     }
-
-    /* 下标运算符（const版本）
-     * 用于const对象：const MyList& list; int x = list[0];
-     * 与非常量版本构成重载
-     */
-    const int& operator[](unsigned int index) const
+    const int& operator[](unsigned int index) const//下标运算符（const版本），与非常量版本构成重载
     {
-        if (index >= len)
+        if (index >= size)
         {
             throw out_of_range("Index out of range");
         }
         return arr[index];
     }
-
-    /* 获取数组长度
-     * noexcept声明：向编译器保证不会抛出异常
-     * 适合简单getter方法
-     */
-    unsigned int size() const noexcept
+    unsigned int Size() const noexcept
     {
-        return len;
+        return size;
     }
-
-    /* 交换函数（友元）
-     * 用于实现copy-and-swap惯用法
-     * noexcept保证交换操作不会失败
-     * 被std::swap调用时提供优化
-     */
-    friend void swap(MyList& a, MyList& b) noexcept
+    friend void swap(MyList& a, MyList& b) noexcept//友元函数就是可以访问类私有成员
     {
-        swap(a.arr, b.arr);
-        swap(a.len, b.len);
+        std::swap(a.arr, b.arr);
+        std::swap(a.size, b.size);
     }
-    void sort() {
-        std::sort(arr, arr + len);
+    void sort() {//忘记介绍了，最重要的，成员函数
+        std::sort(arr, arr + size);
     }
     MyList sorted() {
         MyList temp(*this);
-        std::sort(temp.arr, temp.arr + temp.len);
+        std::sort(temp.arr, temp.arr + temp.size);
         return temp;
     }
 };
 #pragma endregion
 
-#pragma region 第12章 继承
+#pragma region 第10章 继承
 class BaseData {
 public:
     BaseData() {
@@ -215,7 +165,7 @@ public:
 void func(Base& obj){}//加上引用就可以避免
 #pragma endregion
 
-#pragma region 第13章 多态
+#pragma region 第11章 多态
 class Shape {//包含纯虚函数(至少有一个)的类称为抽象类，不能被实例化，可以有其他成员函数
 public:
     virtual double Area() = 0;//纯虚函数,用=0来声明,纯虚函数强制需要子类实现
@@ -272,34 +222,169 @@ class F14 :public virtual P {};
 class F22:public F13,public F14{};//演示虚继承 
 #pragma endregion
 
+#pragma region 第12章 运算符重载
+class Day {//本意是星期一，二，……日
+private:
+    int day;
+public:
+    Day(int day=0):day(day){}
+    Day operator+(const int rhs)//重载+
+    {
+        Day newDay((day + rhs) % 7 == 0 ? 7 : (day + rhs) % 7);
+        return newDay;
+    }
+    Day& operator+=(const int rhs)
+    {
+        day=(day + rhs) % 7 == 0 ? 7 : (day + rhs) % 7;
+        return (*this);
+    }
+    Day& operator++() //这个是前缀版本，++day
+    {
+        (*this) += 1;
+        return *this;
+    }
+    Day operator++(int)//这两个是前缀版本，day++
+    {
+        Day newDay = *this;
+        ++(*this);
+        return newDay;
+    }
+    strong_ordering operator <=>(const Day& another)//三相比较运算符重载 c++20
+    {
+        return day <=> another.day;
+    }
+    operator string ()
+    {
+        stringstream ss;
+        ss << day;
+        return ss.str();
+    }
+};
+template<typename T>//模板语法
+class ArrInHeap {
+private:
+    T* arr;
+    size_t _size;
+public:
+    explicit ArrInHeap(size_t size)//构造函数，防止隐式类型转换
+        :_size(size),
+        arr(size ? new T[size]{} /*值初始化为全0*/ : nullptr) {
+    }
+    ~ArrInHeap()//析构函数
+    {
+        delete[] arr;
+    }
+    ArrInHeap(const ArrInHeap& another)//复制构造函数
+        :_size(another._size),
+        arr(another._size ? new T[another._size] : nullptr)
+    {
+        if (arr)//检查指针有效性，防止空数组拷贝
+            std::copy(another.arr, another.arr + _size, arr);//拷贝
+    }
+    ArrInHeap(ArrInHeap&& another) noexcept//移动构造函数
+        :_size(another._size),
+        arr(another.arr)
+    {
+        another.arr = nullptr;//避免another调用析构函数时释放arr
+        another._size = 0;//虽然没必要，但不管了，大家都这么写呢
+    }
+    friend void swap(ArrInHeap& a, ArrInHeap& b) noexcept {// 交换函数
+        using std::swap;
+        swap(a.arr, b.arr);
+        swap(a._size, b._size);
+    }
+    ArrInHeap& operator=(const ArrInHeap& another) {// 拷贝赋值运算符
+        ArrInHeap temp(another);
+        swap(*this, temp);//copy-and-swap
+        return *this;
+    }
+    ArrInHeap& operator=(ArrInHeap&& another) noexcept {// 移动赋值运算符
+        if (this != &another) {
+            delete[] arr;
+            arr = another.arr;
+            _size = another._size;
+            another.arr = nullptr;
+            another._size = 0;
+        }
+        return *this;
+    }
+    size_t size() const noexcept
+    {
+        return _size;
+    }
+    T& operator[](size_t index)//引用版本，目的是改变
+    {
+        return arr[index];
+    }
+    const T& operator[](size_t index) const//const 版本，目的是读取
+    {
+        return arr[index];
+    }
+    operator std::string()//类型转换运算符重载
+    {//好吧我承认重载这个运算符有点反人类，但不管了，只是示例
+        std::stringstream ss;
+        for (size_t i = 0;i < _size - 1;i++)
+        {
+            ss << arr[i] << ' ';
+        }
+        ss << arr[_size - 1];
+        return ss.str();
+    }
+};
+class Display {//注意，函数运算符重载时也可以定义其他东西，和普通对象一样
+public:
+    void operator() (string input) const//函数运算符 或者叫谓词
+    {
+        cout << input << endl;
+    }
+};
+class Temperature
+{
+private:
+    double kelvin;//开尔文，热力学温度
+public:
+    Temperature(double kelvin):kelvin(kelvin){}
+    operator string() 
+    {
+        stringstream ss;
+        ss << kelvin << "K";
+        return ss.str();
+    }
+};
+static Temperature operator "" _C(long double celsius)//自定义字面量（或者说后缀，如37.5℃）
+{//只能在类外定义
+    return Temperature(celsius + 273);
+}
+//static Temperature operator "" ℃(long double celsius)
+//{
+//    return Temperature(celsius + 273);
+//}//UTF-8的含金量还在上升！！！不过我还是把它注释了
+#pragma endregion
+
+#pragma region 第14章 模板
+
+#pragma endregion
+
 int main()
 {
-#pragma region 第11章 封装相关 主程序部分
-    print("============第11章 封装相关============");
-    // 基本构造测试
-    MyList list1(3); // 调用普通构造函数
+#pragma region 第9章 封装相关 主程序部分
+    print("============第9章 封装相关============");
+    MyList list1(3);
     list1[0] = 10;   // 测试非const版本operator[]
     list1[1] = 30;
     list1[2] = 20;
-
-    // 拷贝构造测试
     MyList list2 = list1; // 调用拷贝构造函数
     cout << "list2[1] should be 30: " << list2[1] << endl;
-
     // 移动构造测试（注意之后list1不再拥有数据）
-    MyList list3 = move(list1); // 调用移动构造函数
-    cout << "list3 size should be 3: " << list3.size() << endl;
-
-    // 拷贝赋值测试
+    MyList list3 = move(list1);
+    cout << "list3 size should be 3: " << list3.Size() << endl;
     MyList list4;
     list4 = list2; // 调用拷贝赋值运算符
     cout << "list4[2] should be 20: " << list4[2] << endl;
-
-    // 移动赋值测试
     MyList list5;
-    list5 = move(list3); // 调用移动赋值运算符
+    list5 = move(list3); // 调用移动赋值运算符，同样list3也不再有数据
     cout << "list5 elements: ";
-    for (unsigned i = 0; i < list5.size(); ++i)
+    for (unsigned i = 0; i < list5.Size(); ++i)
     {
         cout << list5[i] << " "; // 测试const版本operator[]
     }
@@ -310,7 +395,7 @@ int main()
     // sort测试
     list5.sort();
     cout << "list5 sorted elements: ";
-    for (unsigned i = 0; i < list5.size(); ++i)
+    for (unsigned i = 0; i < list5.Size(); ++i)
     {
         cout << list5[i] << " ";
     }
@@ -323,15 +408,15 @@ int main()
     list6[2] = 2;
     MyList list7 = list6.sorted();// 同时测试拷贝构造函数
     cout << "list6 sorted elements: ";
-    for (unsigned i = 0; i < list7.size(); ++i)
+    for (unsigned i = 0; i < list7.Size(); ++i)
     {
         cout << list7[i] << " ";
     }
     cout << endl;
 #pragma endregion
 
-#pragma region 第12章 继承 主程序部分
-    print("============第12章 继承============");
+#pragma region 第10章 继承 主程序部分
+    print("============第10章 继承============");
     {//块级作用域，演示顺序
         Derived1 derived1;
     }/*离开块级作用域，析构
@@ -353,8 +438,8 @@ int main()
     }
 #pragma endregion
 
-#pragma region 多态 主程序部分
-    print("============第13章 多态============");
+#pragma region 第11章 多态 主程序部分
+    print("============第11章 多态============");
     {
         Circle circle(2);
         Triango triango(3, 4, 5);
@@ -379,5 +464,29 @@ int main()
     f22.a = 1;
 #pragma endregion
 
+#pragma region 第12章 运算符重载 主程序部分
+    print("============第12章 运算符重载============");
+    Day day(7);
+    cout << (string)day++ << endl << (string)++day << endl;
+    day += 10;
+    cout << (string)day << endl;
+
+    ArrInHeap<int> myarr(2);
+    myarr[0] = 1;
+    myarr[1] = 2;
+    cout << static_cast<string>(myarr) << endl;//类型转换，和(string)myarr功能一样
+
+    Display displayobj;
+    displayobj("Hello World");//这就是函数运算符重载，可以当作函数调用
+
+    //Temperature tem = 20.0℃;//UTF-8的含金量还在上升！！！不过我还是把它注释了
+    Temperature tem = 20.0_C;//下划线加后缀的形式更符合标准
+    cout << (string)tem << endl;
+#pragma endregion
+
+#pragma region 第14章 模板 主程序部分
+    print("============第14章 模板============");
+
+#pragma endregion
     return 0;
 }
