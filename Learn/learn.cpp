@@ -361,9 +361,6 @@ static Temperature operator "" _C(long double celsius)//自定义字面量（或
 //}//UTF-8的含金量还在上升！！！不过我还是把它注释了
 #pragma endregion
 
-#pragma region 第14章 模板
-
-#pragma endregion
 
 int main()
 {
@@ -484,9 +481,5 @@ int main()
     cout << (string)tem << endl;
 #pragma endregion
 
-#pragma region 第14章 模板 主程序部分
-    print("============第14章 模板============");
-
-#pragma endregion
     return 0;
 }
