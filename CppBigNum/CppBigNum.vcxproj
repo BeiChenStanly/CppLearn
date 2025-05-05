@@ -131,6 +131,9 @@
   <ItemGroup>
     <ClCompile Include="cppbignum.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cppbignum.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -1,35 +1,35 @@
-#include <iostream>
-#define _USE_MATH_DEFINES
+ï»¿#include<iostream>
+#include <sstream>
 #include <cmath>
 #include <deque>
-#include <string>
-#include <stdexcept>
-#include <sstream>
+#include <cstdint>
+#include "cppbignum.h"
 /*
-Ğ´ÔÚÇ°Ãæ£º
-×¢Òâsize_tÊÇunsignedÀàĞÍ£¬²»Òª¸úÓĞ·ûºÅÀàĞÍ»ìÓÃ£¡
-digitsÓÃint8_t´æ´¢ÊÇÎªÁË½ÚÊ¡¿Õ¼ä£¬ÊµÖÊÊÇchar£¬Êä³öÊ±¼ÇµÃÀàĞÍ×ª»»
-×îºÃ±ğ¸Ä³Éusing namespace std;¿ÉÒÔ×Ô¼ºusing std::coutÖ®ÀàµÄ£¨ĞèÒªC++17£©
-¿ÆÑ§¼ÆÊı·¨µÄ¶¨Òå£ºx=a¡Á10^b,1<=a<10
+å†™åœ¨å‰é¢ï¼š
+æ³¨æ„size_tæ˜¯unsignedç±»å‹ï¼Œä¸è¦è·Ÿæœ‰ç¬¦å·ç±»å‹æ··ç”¨ï¼
+digitsç”¨int8_tå­˜å‚¨æ˜¯ä¸ºäº†èŠ‚çœç©ºé—´ï¼Œå®è´¨æ˜¯charï¼Œè¾“å‡ºæ—¶è®°å¾—ç±»å‹è½¬æ¢
+æœ€å¥½åˆ«æ”¹æˆusing namespace std;å¯ä»¥è‡ªå·±using std::coutä¹‹ç±»çš„ï¼ˆéœ€è¦C++17ï¼‰
+ç§‘å­¦è®¡æ•°æ³•çš„å®šä¹‰ï¼šx=aÃ—10^b,1<=a<10
+ä¸‰ç›¸æ¯”è¾ƒè¿ç®—ç¬¦è‡³å°‘éœ€è¦C++20
 */
-class BigNum//¿ÆÑ§¼ÆÊı·¨
+class BigNum // ç§‘å­¦è®¡æ•°æ³•
 {
 private:
-    std::deque<int8_t> digits;//¸÷ÊıÎ»£¨µ¹Ğò´æ´¢£©
-    long long exponent;//Ö¸Êı
-    bool isNegative;//·ûºÅ
+    std::deque<int8_t> digits; // å„æ•°ä½ï¼ˆå€’åºå­˜å‚¨ï¼‰
+    long long exponent;        // æŒ‡æ•°
+    bool isNegative;           // ç¬¦å·
 
     /*aid functions*/
-    void normalize()//±ê×¼»¯£¬¼´´¦ÀíÇ°ºóµ¼0£¬Ê¹1.1451400e2±ä³É1.14514e2£¬0.114514e3±ä³É1.14514e2
+    void normalize() // æ ‡å‡†åŒ–ï¼Œå³å¤„ç†å‰åå¯¼0ï¼Œä½¿1.1451400e2å˜æˆ1.14514e2ï¼Œ0.114514e3å˜æˆ1.14514e2
     {
         while (!digits.empty() && digits.front() == 0)
-        {//È¥ºóµ¼0£¬×¢Òâ´æ´¢ÊÇµ¹ĞòµÄ£¬ËùÒÔÕâÀïÊÇºóµ¼
+        { // å»åå¯¼0ï¼Œæ³¨æ„å­˜å‚¨æ˜¯å€’åºçš„ï¼Œæ‰€ä»¥è¿™é‡Œæ˜¯åå¯¼
             digits.pop_front();
         }
         while (!digits.empty() && digits.back() == 0)
-        {//È¥³ıÇ°µ¼0
+        { // å»é™¤å‰å¯¼0
             digits.pop_back();
-            --exponent;//È¥³ıÇ°µ¼0µÈ¼ÛÓÚ°ÑµÚÒ»Î»ÍùÓÒ±ßÒÆ£¬ÒòÎªµÚÒ»Î»ÏòÓÒ±ßÒÆ£¬ËùÒÔÖ¸ÊıÏà¶Ô¼õÒ»
+            --exponent; // å»é™¤å‰å¯¼0ç­‰ä»·äºæŠŠç¬¬ä¸€ä½å¾€å³è¾¹ç§»ï¼Œå› ä¸ºç¬¬ä¸€ä½å‘å³è¾¹ç§»ï¼Œæ‰€ä»¥æŒ‡æ•°ç›¸å¯¹å‡ä¸€
         }
         if (digits.empty())
         {
@@ -38,17 +38,19 @@ private:
             isNegative = false;
         }
     }
-    static void alignexponent(BigNum& a,BigNum& b)//ºóÃæÌí0ÒÔ¶ÔÆëÖ¸Êı
+    static void alignexponent(BigNum& a, BigNum& b) // åé¢æ·»0ä»¥å¯¹é½æŒ‡æ•°
     {
-        while (a.exponent < b.exponent) {
+        while (a.exponent < b.exponent)
+        {
             a.digits.push_back(0);
             a.exponent++;
         }
-        while (b.exponent < a.exponent) {
+        while (b.exponent < a.exponent)
+        {
             b.digits.push_back(0);
             b.exponent++;
         }
-        while (a.GetSize() < b.GetSize())
+        while (a.GetSize() < b.GetSize()) // å‰é¢æ·»åŠ 0
         {
             a.digits.push_front(0);
         }
@@ -69,26 +71,26 @@ public:
     }
     explicit BigNum(const std::string& s)
     {
-        //³õÊ¼»¯Õı¸º
+        // åˆå§‹åŒ–æ­£è´Ÿ
         size_t start = 0;
         isNegative = bool(s[0] == '-');
         if (isNegative || s[0] == '+')
             ++start;
-        size_t ePos = s.find_first_of("Ee");//×¢ÒâÕâ¸öfind_first_ofÊÇÖ¸EeÖĞµÄÈÎÒâÒ»¸öµÚÒ»¸öË÷Òı
+        size_t ePos = s.find_first_of("Ee"); // æ³¨æ„è¿™ä¸ªfind_first_ofæ˜¯æŒ‡Eeä¸­çš„ä»»æ„ä¸€ä¸ªç¬¬ä¸€ä¸ªç´¢å¼•
 
-        //´¦ÀíeºóÖ¸Êı
-        if (ePos != std::string::npos)//Èç¹ûÊÇĞÎÈç1.14514e5
-        {//×¢Òâµ½11.4514e4ÕâÑùµÄÊäÈëÒ²ÓĞ¿ÉÄÜ£¬ËùÒÔÖ¸ÊıÖ®ºó»¹ĞèÒª¼Ó
+        // å¤„ç†eåæŒ‡æ•°
+        if (ePos != std::string::npos) // å¦‚æœæ˜¯å½¢å¦‚1.14514e5
+        {                              // æ³¨æ„åˆ°11.4514e4è¿™æ ·çš„è¾“å…¥ä¹Ÿæœ‰å¯èƒ½ï¼Œæ‰€ä»¥æŒ‡æ•°ä¹‹åè¿˜éœ€è¦åŠ 
             exponent = std::stoi(s.substr(ePos + 1, s.size() - ePos - 1));
         }
-        else//·ñÔòÊÇĞÎÈç11.4514
+        else // å¦åˆ™æ˜¯å½¢å¦‚11.4514
         {
-            exponent = 0;//ÕâÀïÖ»ÊÇeºó³õÊ¼Öµ
+            exponent = 0; // è¿™é‡Œåªæ˜¯eååˆå§‹å€¼
         }
 
-        //³õÊ¼»¯ÊıÎ»¡¢Ö¸Êı
-        std::string absoluteValue = s.substr(start, ePos == std::string::npos ? s.size() - start : ePos - start);//Óënpos±È½Ï¿ÉÒÔÖªµÀÊÇ·ñÕÒµ½£¬È¥µô·ûºÅºÍeÖ®ºóµÄÖ¸Êı
-        size_t pointPos = absoluteValue.find('.');//Ğ¡Êıµã
+        // åˆå§‹åŒ–æ•°ä½ã€æŒ‡æ•°
+        std::string absoluteValue = s.substr(start, ePos == std::string::npos ? s.size() - start : ePos - start); // ä¸nposæ¯”è¾ƒå¯ä»¥çŸ¥é“æ˜¯å¦æ‰¾åˆ°ï¼Œå»æ‰ç¬¦å·å’Œeä¹‹åçš„æŒ‡æ•°
+        size_t pointPos = absoluteValue.find('.');                                                                // å°æ•°ç‚¹
         if (pointPos != std::string::npos)
         {
             absoluteValue.erase(pointPos, 1);
@@ -99,18 +101,19 @@ public:
         }
         exponent += pointPos - 1;
         digits.resize(absoluteValue.size());
-        for (size_t i = 0;i < absoluteValue.size();++i)
+        for (size_t i = 0; i < absoluteValue.size(); ++i)
         {
-            digits[i] = absoluteValue[absoluteValue.size() - 1 - i]-'0';
+            digits[i] = absoluteValue[absoluteValue.size() - 1 - i] - '0';
         }
-        normalize();//±ê×¼»¯
+        normalize(); // æ ‡å‡†åŒ–
     }
     explicit BigNum(int num)
     {
         isNegative = num < 0;
-        if (isNegative) num = -num;
+        if (isNegative)
+            num = -num;
         exponent = floor(log10(num));
-        for (size_t i = 0;i <= exponent;i++)//ÒòÎªÒªµÚÒ»Î»£¬ËùÒÔ¶àÑ­»·Ò»´Î
+        for (size_t i = 0; i <= exponent; i++) // å› ä¸ºè¦ç¬¬ä¸€ä½ï¼Œæ‰€ä»¥å¤šå¾ªç¯ä¸€æ¬¡
         {
             digits.push_back(num % 10);
             num /= 10;
@@ -119,27 +122,28 @@ public:
     explicit BigNum(long long num)
     {
         isNegative = num < 0;
-        if (isNegative) num = -num;
+        if (isNegative)
+            num = -num;
         exponent = floor(log10(num));
-        for (size_t i = 0;i <= exponent;i++)//ÒòÎªÒªµÚÒ»Î»£¬ËùÒÔ¶àÑ­»·Ò»´Î
+        for (size_t i = 0; i <= exponent; i++) // å› ä¸ºè¦ç¬¬ä¸€ä½ï¼Œæ‰€ä»¥å¤šå¾ªç¯ä¸€æ¬¡
         {
             digits.push_back(num % 10);
             num /= 10;
         }
     }
-    const int& operator[] (const size_t& i)const
+    const int operator[](const size_t& i) const
     {
         return digits[digits.size() - 1 - i];
     }
-    const size_t GetSize()const//ÑªµÄ½ÌÑµ£ºÎªÊ²Ã´²»·µ»ØÒıÓÃconst size_t&£¿ÒòÎªdigits.size()·µ»ØµÄÊÇÓÒÖµ£¬²»ÊÇ×óÖµ
+    const size_t GetSize() const // è¡€çš„æ•™è®­ï¼šä¸ºä»€ä¹ˆä¸è¿”å›å¼•ç”¨const size_t&ï¼Ÿå› ä¸ºdigits.size()è¿”å›çš„æ˜¯å³å€¼ï¼Œä¸æ˜¯å·¦å€¼
     {
         return digits.size();
     }
-    const long long& GetExponent()const
+    const long long& GetExponent() const
     {
         return exponent;
     }
-    const bool& GetNegative()const
+    const bool& GetNegative() const
     {
         return isNegative;
     }
@@ -150,7 +154,7 @@ public:
         ss << (*this)[0] << '.';
         if (GetSize() != 1)
         {
-            for (size_t i = 1;i < GetSize();++i)
+            for (size_t i = 1; i < GetSize(); ++i)
             {
                 ss << (*this)[i];
             }
@@ -159,28 +163,52 @@ public:
         {
             ss << '0';
         }
-        ss << "¡Á10^" << (exponent < 0 ? "(" : "") << exponent << (exponent < 0 ? ")" : "");
+        ss << "Ã—10^" << (exponent < 0 ? "(" : "") << exponent << (exponent < 0 ? ")" : "");
         return ss.str();
     }
-    BigNum operator+(const BigNum& rhs)const
+    std::strong_ordering operator<=>(const BigNum& rhs) const
     {
-        if (isNegative == rhs.isNegative)//Í¬ºÅÂß¼­
+        if (isNegative != rhs.isNegative)
         {
-            BigNum a(*this), b(rhs);//´´½¨¸±±¾
-            alignexponent(a, b);//ÈÃÁ½¸öÊıÍ·²¿¶ÔÆë£¨Í¨¹ıÇ°Ãæ²¹0µÄ·½Ê½£©
+            return rhs.isNegative <=> isNegative;
+        }
+        else
+        {
+            BigNum a(*this);
+            BigNum b(rhs);
+            alignexponent(a, b);
+            for (size_t i = 0; i < a.GetSize(); ++i)
+            {
+                if (a[i] != b[i])
+                {
+                    return a[i] <=> b[i];
+                }
+            }
+            return std::strong_ordering::equal;
+        }
+    }
+    BigNum operator+(const BigNum& rhs) const
+    {
+        if (isNegative == rhs.isNegative) // åŒå·é€»è¾‘
+        {
+            BigNum a(*this), b(rhs); // åˆ›å»ºå‰¯æœ¬
+            alignexponent(a, b);     // è®©ä¸¤ä¸ªæ•°å¤´éƒ¨å¯¹é½ï¼ˆé€šè¿‡å‰é¢è¡¥0çš„æ–¹å¼ï¼‰
             BigNum result;
             result.isNegative = isNegative;
             result.exponent = a.exponent;
 
-            int8_t carry = 0;//ÉÏÒ»Î»µÄ½øÎ»
+            int8_t carry = 0; // ä¸Šä¸€ä½çš„è¿›ä½
             size_t max_len = std::max(a.digits.size(), b.digits.size());
-            for (size_t i = 0; i < max_len || carry; ++i) {
+            for (size_t i = 0; i < max_len || carry; ++i)
+            {
                 int8_t sum = carry;
-                if (i < a.digits.size()) sum += a.digits[i];
-                if (i < b.digits.size()) sum += b.digits[i];
+                if (i < a.digits.size())
+                    sum += a.digits[i];
+                if (i < b.digits.size())
+                    sum += b.digits[i];
                 result.digits.push_back(sum % 10);
                 carry = sum / 10;
-                if (i >= max_len)//µ±½øÎ»Ê±£¬ĞèÒª°ÑÖ¸ÊıÔö¼Ó
+                if (i >= max_len) // å½“è¿›ä½æ—¶ï¼Œéœ€è¦æŠŠæŒ‡æ•°å¢åŠ 
                 {
                     ++result.exponent;
                 }
@@ -188,7 +216,7 @@ public:
             result.normalize();
             return result;
         }
-        else//ÒìºÅÂß¼­
+        else // å¼‚å·é€»è¾‘
         {
             if (rhs.isNegative == true)
             {
@@ -204,36 +232,85 @@ public:
             }
         }
     }
-    BigNum operator-(const BigNum& rhs)const
+    BigNum operator-(const BigNum& rhs) const
     {
-
+        if (isNegative != rhs.isNegative)
+        {
+            if (isNegative)
+            {
+                BigNum copy = (*this);
+                copy.isNegative = false;
+                BigNum result = rhs + copy;
+                result.isNegative = true;
+                return result;
+            }
+            else
+            {
+                BigNum copy = rhs;
+                copy.isNegative = false;
+                BigNum result = copy + (*this);
+                return result;
+            }
+        }
+        else
+        {
+            BigNum maxnum,minnum;
+            if ((*this) >= rhs)
+            {
+                maxnum = (*this);
+                minnum = rhs;
+                maxnum.isNegative = false;
+            }
+            else
+            {
+                minnum = (*this);
+                maxnum = rhs;
+                maxnum.isNegative = true;
+            }
+            alignexponent(maxnum, minnum);
+            for (size_t i = 0;i < maxnum.digits.size();++i)
+            {
+                maxnum.digits[i] -= minnum.digits[i];
+                if (maxnum.digits[i] < 0)
+                {
+                    maxnum.digits[i] += 10;
+                    --maxnum.digits[i + 1];
+                }
+            }
+            maxnum.normalize();
+            return maxnum;
+        }
     }
     std::string ToFloatFormart()
     {
         std::stringstream ss;
+        if (isNegative)
+            ss << '-';
         if (exponent < 0)
         {
             ss << "0.";
-            for (long long i = 1;i < -exponent;++i)
+            for (long long i = 1; i < -exponent; ++i)
             {
                 ss << '0';
             }
-            for (size_t i = 0;i < GetSize();++i)
+            for (size_t i = 0; i < GetSize(); ++i)
             {
                 ss << (*this)[i];
             }
         }
         else
         {
-            for (long long i = 0;i < exponent + 1;++i)
+            for (long long i = 0; i < exponent + 1; ++i)
             {
-                if (i < digits.size()) ss << (*this)[i];
-                else ss << '0';
+                if (i < digits.size())
+                    ss << (*this)[i];
+                else
+                    ss << '0';
             }
             ss << '.';
             if (digits.size() > exponent + 1)
             {
-                for (long long i = exponent + 1;i < digits.size();++i)
+                for (long long i = exponent + 1; i < digits.size(); ++i)
                 {
                     ss << (*this)[i];
                 }
@@ -250,8 +327,7 @@ int main()
 {
     using std::string, std::cout, std::cin, std::endl;
     string s;
-    //string s2;
-    int num;
+    string s2;
     while (true)
     {
         cout << "Enter the first number(enter \"exit\" to quit):";
@@ -261,19 +337,14 @@ int main()
             break;
         }
         cout << "Enter the second number(enter \"exit\" to quit):";
-        /*cin >> s2;
+        cin >> s2;
         if (s2 == "exit")
         {
             break;
-        }*/
+        }
 
-        BigNum bn(s);
-        //BigNum bn2(s2);
-
-        /*std::stringstream ss;
-        ss << s;
-        ss >> num;
-        BigNum bn(num);*/
+        BigNum bn1(s);
+        BigNum bn2(s2);
 
         /*cout << "Negative:" << (bn.GetNegative() ? "Yes" : "No") << endl;
         cout << "Digits:" << endl;
@@ -284,10 +355,14 @@ int main()
         cout << bn[bn.GetSize() - 1] << endl;
         cout << "Exponent:" << bn.GetExponent() << endl;*/
 
-        cout << "Stringify1:" << (string)bn << endl;
-        /*cout << "Stringify2:" << (string)bn2 << endl;
-        cout << "Sum:" << (string)(bn + bn2) << endl;*/
-        cout << "FloatFormatted:" << bn.ToFloatFormart() << endl;
+        cout << "Stringify1:" << bn1.ToFloatFormart() << endl;
+        cout << "Stringify2:" << bn2.ToFloatFormart() << endl;
+        cout << "Sum:" << (bn1 + bn2).ToFloatFormart() << endl;
+        // cout << "FloatFormatted:" << bn.ToFloatFormart() << endl;
+        cout << "A>B:" << ((bn1 <=> bn2) > 0) << endl;//æµ‹è¯•ä¸‰ç›¸æ¯”è¾ƒè¿ç®—ç¬¦
+        cout << "A==B:" << ((bn1 <=> bn2) == 0) << endl;
+        cout << "A<B:" << ((bn1 <=> bn2) < 0) << endl;
+        cout << "Difference:" << (bn1 - bn2).ToFloatFormart() << endl;
     }
     return 0;
 };
